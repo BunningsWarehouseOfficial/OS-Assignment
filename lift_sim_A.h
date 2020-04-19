@@ -6,10 +6,6 @@ typedef struct {
     int requestTime;
 } Settings;
 
-typedef struct {
-    // blah blah blah +
-} Request;
-
-void* threadFn();
+//TODO headers;
 
 #endif

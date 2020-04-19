@@ -35,7 +35,9 @@ int main(int argc, char* argv[]) {
         
         if (loadSettings(Settings* settings, argv[1], argv[2]) = 1) {
             pthread_t lift1, lift2, lift3;
+            int bufferSize = settings->bufferSize;
 
+            anotheroneyeahyeahyeah(bufferSize); //TODO don't forget to change the name here as well
         }
 
 
@@ -52,7 +54,7 @@ int main(int argc, char* argv[]) {
 
 int loadSettings(Settings* settings, bufferSize, requestTime) {
     int scan1, scan2, bufferSize, requestTime, valid;
-    valid = 0;
+    valid = 0; //'boolean'
     sscanf(argv[1], "%d", &bufferSize);
     sscanf(argv[2], "%d", &requestTime);
 
