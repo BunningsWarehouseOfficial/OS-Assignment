@@ -2,7 +2,7 @@
 #define LIFT_SIM_B_H
 
 typedef struct {
-    // blah blah blah
+    // blah blah blah +
 } Name;
 
 #endif

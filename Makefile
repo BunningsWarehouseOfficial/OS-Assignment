@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -pthread -Wall -Werror -std=c99 -g
+CFLAGS = -Wall -Werror -std=c99 -g
 OBJ1 = lift_sim_A.o
 OBJ2 = lift_sim_B.o
 EXEC1 = A

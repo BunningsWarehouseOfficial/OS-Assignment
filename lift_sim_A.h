@@ -2,8 +2,13 @@
 #define LIFT_SIM_A_H
 
 typedef struct {
-    // blah blah blah
-} Name;
+    int bufferSize;
+    int requestTime;
+} Settings;
+
+typedef struct {
+    // blah blah blah +
+} Request;
 
 void* threadFn();
 
