@@ -37,10 +37,10 @@ int main(int argc, char* argv[]) {
             pthread_t lift1, lift2, lift3;
             int bufferSize = settings->bufferSize;
 
-            anotheroneyeahyeahyeah(bufferSize); //TODO don't forget to change the name here as well
+            if (checkInput() == 0) {
+                liftR(bufferSize);
+            }
         }
-
-
 
         free(settings);
     }

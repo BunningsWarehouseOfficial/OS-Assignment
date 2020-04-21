@@ -6,6 +6,6 @@ typedef struct {
     int requestTime;
 } Settings;
 
-//TODO headers;
+//TODO headers
 
 #endif
