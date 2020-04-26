@@ -6,6 +6,18 @@ typedef struct {
     int requestTime;
 } Settings;
 
-//TODO headers
+typedef struct {
+    int source;
+    int destination;
+} Request;
+
+typedef struct { //Merge with settings? +
+    pthread_mutex_t mutex;
+    pthread_mutex_t full;
+    pthread_mutex_t empty;
+    Request** buffer;
+} Info;
+
+int loadSettings(Settings* settings, char* a, char* b);
 
 #endif

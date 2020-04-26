@@ -1,11 +1,8 @@
 #ifndef REQUEST_HANDLER_H
 #define REQUEST_HANDLER_H
 
-typedef struct {
-    int source;
-    int destination;
-} Request;
-
-//TODO headers
+void* liftR(Request** buffer, int bufferSize, int lineNum);
+int request(FILE* f, Request* request);
+int checkInput(int* lineNum);
 
 #endif

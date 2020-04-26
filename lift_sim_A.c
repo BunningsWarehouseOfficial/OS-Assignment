@@ -22,6 +22,8 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <unistd.h>
+#include "lift_sim_A.h"
+#include "request_handler.h"
 
 void* threadFn() { //Doesn't work unless before main() ? +
     sleep(1);
@@ -33,30 +35,52 @@ int main(int argc, char* argv[]) {
     if (argc == 3) {
         Settings* settings = (Settings*)malloc(sizeof(Settings));
         
-        if (loadSettings(Settings* settings, argv[1], argv[2]) = 1) {
-            pthread_t lift1, lift2, lift3;
-            int bufferSize = settings->bufferSize;
+        if (loadSettings(settings, argv[1], argv[2]) == 1) {
+            int lineNum = 0;
 
-            if (checkInput() == 0) {
-                liftR(bufferSize);
+            if (checkInput(&lineNum) == 0) {
+                int bufferSize;
+                //pthread_t lift1, lift2, lift3, liftR;
+                //pthread_mutex_t mutex, full, empty;
+                Info* info = (Info*)malloc(sizeof(Info));
+                Request** buffer = (Request**)malloc(bufferSize * sizeof(Request*));
+                bufferSize = settings->bufferSize;
+                //info->mutex = mutex;
+                //info->full = full;
+                //info->empty = empty;
+
+                //pthread_create(&lift1, NULL, lift, NULL);
+                //pthread_create(&lift2, NULL, lift, NULL);
+                //pthread_create(&lift3, NULL, lift, NULL);
+                //pthread_create(&liftR, NULL, liftR, NULL);
+                //pthread_mutex_init(&mutex, NULL);
+                //thread_mutex_init(&full, NULL);
+                //pthread_mutex_init(&empty, NULL);
+
+                liftR(bufferSize, lineNum);
+
+                //TODO destroy mutexes when finished
+
+                free(buffer);
+                free(info);
             }
         }
 
         free(settings);
     }
     else { //Error for running executable on command line incorrectly
-        printf("Error: Program must be run as [lift_sim_A m t] where m is the buffer size and t is the time required " +
+        printf("Error: Program must be run as [lift_sim_A m t] where m is the buffer size and t is the time required "
                "per lift request\n");
     }
 
     return 0;
 }
 
-int loadSettings(Settings* settings, bufferSize, requestTime) {
+int loadSettings(Settings* settings, char* a, char* b) {
     int scan1, scan2, bufferSize, requestTime, valid;
     valid = 0; //'boolean'
-    sscanf(argv[1], "%d", &bufferSize);
-    sscanf(argv[2], "%d", &requestTime);
+    scan1 = sscanf(a, "%d", &bufferSize);
+    scan2 = sscanf(b, "%d", &requestTime);
 
     if (scan1 != 1 && scan2 != 1) {
         printf("Error: Command line parameters for buffer size [m] and the time required [t] must be two integers\n");
