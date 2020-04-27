@@ -2,22 +2,20 @@
 #define LIFT_SIM_A_H
 
 typedef struct {
-    int bufferSize;
-    int requestTime;
-} Settings;
-
-typedef struct {
     int source;
     int destination;
 } Request;
 
 typedef struct { //Merge with settings? +
+    int bufferSize;
+    int requestTime;
+    int lineNum;
     pthread_mutex_t mutex;
     pthread_mutex_t full;
     pthread_mutex_t empty;
     Request** buffer;
 } Info;
 
-int loadSettings(Settings* settings, char* a, char* b);
+int loadSettings(Info* info, char* a, char* b);
 
 #endif

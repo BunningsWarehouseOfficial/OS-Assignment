@@ -18,14 +18,14 @@ $(EXEC1) : $(OBJ1)
 $(EXEC2) : $(OBJ2)
 	$(CC) $(OBJ2) -o $(EXEC2)
 
-lift_sim_A.o : lift_sim_A.c lift_sim_A.h request_handler.h
+lift_sim_A.o : lift_sim_A.c lift_sim_A.h request_handler.h lift.h
 	$(CC) -c lift_sim_A.c $(CFLAGS)
 
-request_handler.o : request_handler.c
+request_handler.o : request_handler.c request_handler.h lift_sim_A.h
 	$(CC) -c request_handler.c $(CFLAGS)
 
-lift.o : lift.c
-	$(CC) -c lift.o $(CFLAGS)
+lift.o : lift.c lift.h
+	$(CC) -c lift.c $(CFLAGS)
 
 lift_sim_B.o : lift_sim_B.c lift_sim_B.h
 	$(CC) -c lift_sim_B.c $(CFLAGS)
