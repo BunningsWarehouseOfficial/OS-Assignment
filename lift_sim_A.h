@@ -6,13 +6,14 @@ typedef struct {
     int destination;
 } Request;
 
-typedef struct { //Merge with settings? +
+typedef struct { //TODO Add comment for each field
     int bufferSize;
     int requestTime;
-    int lineNum;
-    pthread_mutex_t mutex;
-    pthread_mutex_t full;
-    pthread_mutex_t empty;
+    int remaining; //The number of requests from sim_input.txt that are remaining to be processed
+    int currentLift; //Used for assigning the lift threads their number between 1 and 3
+    int empty; //Number of empty slots in buffer
+    pthread_mutex_t bufferLock;
+    pthread_cond_t cond;
     Request** buffer;
 } Info;
 

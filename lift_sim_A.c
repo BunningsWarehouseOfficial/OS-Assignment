@@ -20,6 +20,8 @@
 
 //TODO Make sure I don't have any redundant #include statements
 
+//TODO test checkInput
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
@@ -34,38 +36,34 @@ int main(int argc, char* argv[]) {
 
         printf("Loading settings\n"); //
         if (loadSettings(info, argv[1], argv[2]) == 1) {
-            info->lineNum = 0;
+            info->remaining = 0;
 
             printf("Checking input\n"); //
-            if (checkInput(&info->lineNum) == 1) {
+            if (checkInput(&info->remaining) == 1) {
                 pthread_t id[4];
-                //pthread_mutex_t mutex, full, empty;
-                int liftArgs[3];
-
-                //TODO for loop initialisation of buffer if necessary
+                pthread_mutex_t bufferLock = PTHREAD_MUTEX_INITIALIZER;
+                pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
                 Request** buffer = (Request**)malloc(info->bufferSize * sizeof(Request*));
-                //Request** buffer = (Request**)calloc(info->bufferSize, sizeof(Request*));
 
+                pthread_mutex_init(&bufferLock, NULL); //TODO checking return of init to see if it failed, if necessary
                 info->buffer = buffer;
-                //info->mutex = mutex;
-                //info->full = full;
-                //info->empty = empty;
+                info->bufferLock = bufferLock;
+                info->cond = cond;
 
-                for (int jj = 0; jj < 3; jj++) {
-                    liftArgs[jj] = jj + 1;
-                    pthread_create(&id[jj], NULL, lift, &liftArgs[jj]);
-                }
+                //Creating the threads
                 pthread_create(&id[3], NULL, liftR, (void*)info);
+                for (int jj = 0; jj < 3; jj++) {
+                    info->currentLift = jj + 1;
+                    printf("Creating L%d\n", jj + 1); //FIXME may not work consistently
+                    pthread_create(&id[jj], NULL, lift, (void*)info);
+                }
 
+                //Waiting for threads to finish executing
                 for (int kk = 0; kk < 4; kk++) {
                     pthread_join(id[kk], NULL);
                 }
 
-                //pthread_mutex_init(&mutex, NULL);
-                //thread_mutex_init(&full, NULL);
-                //pthread_mutex_init(&empty, NULL);
-
-                //TODO destroy mutexes when finished
+                pthread_mutex_destroy(&bufferLock);
 
                 free(buffer);
             }
@@ -103,9 +101,3 @@ int loadSettings(Info* info, char* a, char* b) {
     }
     return valid;
 }
-
-    //Geeks for Geeks example, redundant +
-    //printf("About to create a thread\n");                      //*thread_id passed below is set by the create function
-    //pthread_create(&thread_id, NULL, threadFn, NULL); //pthread_create(*thread_id, attributes, function, <-args)
-    //pthread_join(thread_id, NULL); //Equivalent of wait() for processes, waits until specified thread terminates
-    //printf("Thread has been created\n");

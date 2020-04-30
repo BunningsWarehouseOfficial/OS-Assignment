@@ -12,30 +12,31 @@ void* liftR(void* arg) {
     
     f = fopen("sim_input.txt", "r");
     if (f == NULL) {
-        perror("Error opening sim_input.txt");
+        perror("Error opening sim_input.txt\n");
     }
     else {
-        int lineNum, valid; //'boolean'
         Request** buffer = info->buffer;
-        valid = 1;
-        lineNum = info->lineNum;
-        printf("lineNum = %d\n", lineNum); //
+        pthread_mutex_t* bufferLock = &info->bufferLock;
+        pthread_cond_t* cond = &info->cond;
+        int numLines = info->remaining; //The initial value of remaining represents the no. of lines in sim_input.txt
+        info->empty = info->bufferSize; //Initialising empty to indicate that the buffer is empty
 
-        for (int ii = 0; ii < lineNum; ii++) {
-            if (valid == 1) {
-                //pthread_mutex_lock(&empty, NULL); //wait(empty) +
-                //printf("Empty has locked");
-                //pthread_mutex_lock(&mutex, NULL); //wait(mutex) +
-                //printf("Mutex has locked\n");
-
-                valid = request(f, buffer[ii]);
-                printf("line %d\n", ii + 1); //
-
-                //pthread_mutex_unlock(&mutex,NULL); //signal(mutex) +
-                //printf("Mutex has unlocked\n");
-                //pthread_mutex_unlock(&full, NULL); //signal(full) +
-                //printf("Full has unlocked");
+        //Producer loop
+        for (int ii = 0; ii < numLines; ii++) {
+            printf("R for loop ii=%d\n", ii); //
+            pthread_mutex_lock(bufferLock);
+            if (info->empty == 0) {
+                printf("R wait\n"); //
+                pthread_cond_wait(cond, bufferLock);
             }
+
+            info->empty--;
+            request(f, buffer[info->bufferSize - info->empty]);
+            info->remaining--; 
+            //printf("Added request %d\n", ii + 1); //
+
+            pthread_cond_signal(cond);
+            pthread_mutex_unlock(bufferLock);
         }
     }
 
@@ -46,21 +47,22 @@ void* liftR(void* arg) {
 }
 
 //Lift-R - getting one request at a time
-int request(FILE* f, Request* request) {
-    int line, source, destination, valid = 0; //'boolean'
+void request(FILE* f, Request* request) { //TODO make sure that 'valid' return is not required
+    int line, source, destination;
 
     line = fscanf(f, "%d %d\n", &source, &destination);
     if (line == 2 && line != EOF) {
         request = (Request*)malloc(sizeof(Request));
         request->source = source;
         request->destination = destination;
-        valid = 1;
+        printf("request() finishing\n"); //
     }
-
-    return valid;    
+    else {
+        printf("Error: problem handling request\n"); //TODO remove this and add assertion if 'valid' is NEVER required
+    }
 }
 
-int checkInput(int* lineNum) {
+int checkInput(int* remaining) {
     FILE* f;
     int valid = 1; //'boolean'
 
@@ -75,24 +77,24 @@ int checkInput(int* lineNum) {
             line = fscanf(f, "%d %d\n", &a, &b);
             
             if (line != EOF) {
-                (*lineNum)++; //Tallying after fscanf() so as to not include 'empty' EOF lines in count
+                (*remaining)++; //Tallying after fscanf() so as to not include 'empty' EOF lines in count
 
                 if (line != 2) {
                     if (line == EOF) { printf("EOF!\n"); }
-                    printf("Error: Format must be two numbers separated by a space (sim_input.txt line %d)\n", *lineNum);
+                    printf("Error: Format must be two numbers separated by a space (sim_input.txt line %d)\n", *remaining);
                     valid = 0;
                 }
                 else if (a > 20 || b > 20 || a < 1 || b < 1) {
-                    printf("Error: Values must be between 1 and 20 (sim_input.txt line %d)\n", *lineNum);
+                    printf("Error: Values must be between 1 and 20 (sim_input.txt line %d)\n", *remaining);
                     valid = 0;
                 }
                 else if (a == b) {
-                    printf("Error: Source and destination floors can not be equal (sim_input.txt line %d)\n", *lineNum);
+                    printf("Error: Source and destination floors can not be equal (sim_input.txt line %d)\n", *remaining);
                 }
             }
         }
 
-        if (*lineNum < 50 || *lineNum > 100) {
+        if (*remaining < 50 || *remaining > 100) {
             printf("Error: Incorrect format in sim_input line, must be between 50 and 100 requests (lines)\n");
             valid = 0;
         }
