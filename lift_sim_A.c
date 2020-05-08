@@ -34,11 +34,11 @@ int main(int argc, char* argv[]) {
     if (argc == 3) {
         Info* info = (Info*)malloc(sizeof(Info));
 
-        printf("Loading settings\n"); //
+        printf("M Loading settings\n"); //
         if (loadSettings(info, argv[1], argv[2]) == 1) {
             info->remaining = 0;
 
-            printf("Checking input\n"); //
+            printf("M Checking input\n\n"); //
             if (checkInput(&info->remaining) == 1) {
                 pthread_t id[4];
                 pthread_mutex_t bufferLock = PTHREAD_MUTEX_INITIALIZER;
@@ -54,13 +54,15 @@ int main(int argc, char* argv[]) {
                 pthread_create(&id[3], NULL, liftR, (void*)info);
                 for (int jj = 0; jj < 3; jj++) {
                     info->currentLift = jj + 1;
-                    printf("Creating L%d\n", jj + 1); //FIXME may not work consistently
+                    printf("M Creating L%d\n", jj + 1); //FIXME may not work consistently
                     pthread_create(&id[jj], NULL, lift, (void*)info);
                 }
 
+                printf("M Entering join for loop\n"); //
                 //Waiting for threads to finish executing
                 for (int kk = 0; kk < 4; kk++) {
                     pthread_join(id[kk], NULL);
+                    printf("M Finished a join\n"); //
                 }
 
                 pthread_mutex_destroy(&bufferLock);

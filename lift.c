@@ -14,7 +14,7 @@ void* lift(void* arg) {
     lNum = info->currentLift;
     currentFloor = 1;
 
-    printf("L%d entering while loop\n", lNum); //
+    //printf("L%d entering while loop\n", lNum); //
     while (info->remaining > 0) {
         pthread_mutex_lock(bufferLock);
         if (info->empty == info->bufferSize) {
@@ -22,10 +22,14 @@ void* lift(void* arg) {
             pthread_cond_wait(cond, bufferLock);
         }
 
-        //printf("L%d: ", lNum);
-        //sleep(info->requestTime);
-        executeRequest(&currentFloor, buffer[info->bufferSize - info->empty - 1]);
+        //printf("L%d while() - info->remaining == %d\n", lNum, info->remaining); //
+        printf("\nL%d Consuming buffer[%d]\n", lNum,  (info->bufferSize - 1) - info->empty); //
+        sleep(info->requestTime);
+        executeRequest(&currentFloor, buffer[(info->bufferSize - 1) - info->empty]);
+
         info->empty++;
+        pthread_cond_signal(cond);
+        pthread_mutex_unlock(bufferLock);
     }
     
     pthread_exit(NULL);

@@ -16,6 +16,7 @@ void* liftR(void* arg) {
     }
     else {
         Request** buffer = info->buffer;
+        Request* request_;
         pthread_mutex_t* bufferLock = &info->bufferLock;
         pthread_cond_t* cond = &info->cond;
         int numLines = info->remaining; //The initial value of remaining represents the no. of lines in sim_input.txt
@@ -23,17 +24,21 @@ void* liftR(void* arg) {
 
         //Producer loop
         for (int ii = 0; ii < numLines; ii++) {
-            printf("R for loop ii=%d\n", ii); //
+            //printf("R for loop ii=%d\n", ii); //
             pthread_mutex_lock(bufferLock);
             if (info->empty == 0) {
                 printf("R wait\n"); //
                 pthread_cond_wait(cond, bufferLock);
             }
 
+            request_ = (Request*)malloc(sizeof(Request)); //TODO change name so don't have 2 'request'
+            request(f, request_);
+
+            printf("\nR Producing buffer[%d]\n", info->bufferSize - info->empty); //
+            buffer[info->bufferSize - info->empty] = request_; //TODO perhaps I do need 'valid' for this
             info->empty--;
-            request(f, buffer[info->bufferSize - info->empty]);
             info->remaining--; 
-            //printf("Added request %d\n", ii + 1); //
+            //printf("R Added request %d\n\n", ii + 1); //
 
             pthread_cond_signal(cond);
             pthread_mutex_unlock(bufferLock);
@@ -52,10 +57,10 @@ void request(FILE* f, Request* request) { //TODO make sure that 'valid' return i
 
     line = fscanf(f, "%d %d\n", &source, &destination);
     if (line == 2 && line != EOF) {
-        request = (Request*)malloc(sizeof(Request));
+        //request = (Request*)malloc(sizeof(Request)); +
         request->source = source;
         request->destination = destination;
-        printf("request() finishing\n"); //
+        //printf("R request() finishing\n"); //
     }
     else {
         printf("Error: problem handling request\n"); //TODO remove this and add assertion if 'valid' is NEVER required
@@ -73,9 +78,8 @@ int checkInput(int* remaining) {
     else {
         int line, a, b;
 
-        while (valid == 1 && line != EOF) {
-            line = fscanf(f, "%d %d\n", &a, &b);
-            
+        line = fscanf(f, "%d %d\n", &a, &b);
+        while (valid == 1 && line != EOF) {            
             if (line != EOF) {
                 (*remaining)++; //Tallying after fscanf() so as to not include 'empty' EOF lines in count
 
@@ -91,7 +95,8 @@ int checkInput(int* remaining) {
                 else if (a == b) {
                     printf("Error: Source and destination floors can not be equal (sim_input.txt line %d)\n", *remaining);
                 }
-            }
+            } 
+            line = fscanf(f, "%d %d\n", &a, &b);
         }
 
         if (*remaining < 50 || *remaining > 100) {
