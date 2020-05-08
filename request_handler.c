@@ -5,62 +5,56 @@
 #include "request_handler.h"
 
 void* liftR(void* arg) {
-    FILE* f;
-    //int in, out;
-    Info* info = (Info*)arg;
-    //in = out = 0;
+    FILE* input;
+    Shared* shared = (Shared*)arg;
     
-    f = fopen("sim_input.txt", "r");
-    if (f == NULL) {
+    input = fopen("sim_input.txt", "r");
+    if (input == NULL) {
         perror("Error opening sim_input.txt\n");
     }
     else {
-        Request** buffer = info->buffer;
-        Request* request_;
-        pthread_mutex_t* bufferLock = &info->bufferLock;
-        pthread_cond_t* cond = &info->cond;
-        int numLines = info->remaining; //The initial value of remaining represents the no. of lines in sim_input.txt
-        info->empty = info->bufferSize; //Initialising empty to indicate that the buffer is empty
+        Request** buffer = shared->buffer;
+        pthread_mutex_t* bufferLock = &shared->bufferLock;
+        pthread_cond_t* cond = &shared->cond;
+        int numLines = shared->remaining; //The initial value of remaining represents the no. of lines in sim_input.txt
+        shared->empty = shared->bufferSize; //Initialising empty to indicate that the buffer is empty
 
         //Producer loop
         for (int ii = 0; ii < numLines; ii++) {
             //printf("R for loop ii=%d\n", ii); //
             pthread_mutex_lock(bufferLock);
-            if (info->empty == 0) {
-                printf("R wait\n"); //
+            if (shared->empty == 0) {
+                printf("R wait\n\n"); //
                 pthread_cond_wait(cond, bufferLock);
             }
 
-            request_ = (Request*)malloc(sizeof(Request)); //TODO change name so don't have 2 'request'
-            request(f, request_);
-
-            printf("\nR Producing buffer[%d]\n", info->bufferSize - info->empty); //
-            buffer[info->bufferSize - info->empty] = request_; //TODO perhaps I do need 'valid' for this
-            info->empty--;
-            info->remaining--; 
-            //printf("R Added request %d\n\n", ii + 1); //
-
+            //FIXME I shouldn't be mallocing a request every time I go into critical section
+            //Critical section: Adding a request to the buffer
+            printf("R Producing buffer[%d]\n", shared->bufferSize - shared->empty); //
+            request(f, buffer[shared->bufferSize - shared->empty]);
+            shared->empty--;
+            shared->remaining--;
+            printf("    R %d requests remaining\n", shared->remaining); // 
             pthread_cond_signal(cond);
             pthread_mutex_unlock(bufferLock);
+            //End critical section
         }
     }
 
-    fclose(f);
+    fclose(input);
     pthread_exit(NULL);
     return(NULL);
     //TODO End the whole simulation/program here
 }
 
 //Lift-R - getting one request at a time
-void request(FILE* f, Request* request) { //TODO make sure that 'valid' return is not required
+void request(FILE* input, Request* request) { //TODO make sure that 'valid' return is not required
     int line, source, destination;
 
-    line = fscanf(f, "%d %d\n", &source, &destination);
+    line = fscanf(input, "%d %d\n", &source, &destination);
     if (line == 2 && line != EOF) {
-        //request = (Request*)malloc(sizeof(Request)); +
         request->source = source;
         request->destination = destination;
-        //printf("R request() finishing\n"); //
     }
     else {
         printf("Error: problem handling request\n"); //TODO remove this and add assertion if 'valid' is NEVER required

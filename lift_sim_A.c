@@ -32,46 +32,51 @@
 
 int main(int argc, char* argv[]) {
     if (argc == 3) {
-        Info* info = (Info*)malloc(sizeof(Info));
+        Shared* shared = (Shared*)malloc(sizeof(Shared));
 
-        printf("M Loading settings\n"); //
-        if (loadSettings(info, argv[1], argv[2]) == 1) {
-            info->remaining = 0;
+        if (loadSettings(shared, argv[1], argv[2]) == 1) {
+            shared->remaining = 0;
 
-            printf("M Checking input\n\n"); //
-            if (checkInput(&info->remaining) == 1) {
+            if (checkInput(&shared->remaining) == 1) {
                 pthread_t id[4];
                 pthread_mutex_t bufferLock = PTHREAD_MUTEX_INITIALIZER;
                 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
-                Request** buffer = (Request**)malloc(info->bufferSize * sizeof(Request*));
+                Info** info = (Info**)malloc(3 * sizeof(Info*));
 
-                pthread_mutex_init(&bufferLock, NULL); //TODO checking return of init to see if it failed, if necessary
-                info->buffer = buffer;
-                info->bufferLock = bufferLock;
-                info->cond = cond;
+                Request** buffer = (Request**)malloc(shared->bufferSize * sizeof(Request*));
+                for (int ii = 0; ii < shared->bufferSize; ii++) {
+                    buffer[ii] = (Request*)malloc(sizeof(Request));
+                }
+                shared->buffer = buffer;
+                shared->bufferLock = bufferLock;
+                shared->cond = cond;
 
                 //Creating the threads
-                pthread_create(&id[3], NULL, liftR, (void*)info);
-                for (int jj = 0; jj < 3; jj++) {
-                    info->currentLift = jj + 1;
-                    printf("M Creating L%d\n", jj + 1); //FIXME may not work consistently
-                    pthread_create(&id[jj], NULL, lift, (void*)info);
+                pthread_create(&id[0], NULL, liftR, (void*)shared);
+                for (int jj = 1; jj <= 3; jj++) {
+                    info[jj - 1] = (Info*)malloc(sizeof(Info));
+                    info[jj - 1]->liftNo = jj;
+                    info[jj - 1]->shared = shared;
+                    printf("M Creating L%d\n", jj); //BUG threads sometimes end up with same number
+                    pthread_create(&id[jj], NULL, lift, (void*)info[jj - 1]);
                 }
 
                 printf("M Entering join for loop\n"); //
                 //Waiting for threads to finish executing
                 for (int kk = 0; kk < 4; kk++) {
-                    pthread_join(id[kk], NULL);
+                    pthread_join(id[kk], NULL); //Join so main waits until threads finish, starting with id[0], liftR
                     printf("M Finished a join\n"); //
-                }
+                } //TODO perhaps only wait (join) for liftR to finish?
 
                 pthread_mutex_destroy(&bufferLock);
-
+                pthread_cond_destroy(&cond);
+                for (int ll = 0; ll < shared->bufferSize; ll++) {
+                    free(shared->buffer[ll]);
+                }
                 free(buffer);
             }
         }
-
-        free(info);
+        free(shared);
     }
     else { //Error for running executable on command line incorrectly
         printf("Error: Program must be run as [lift_sim_A m t] where m is the buffer size and t is the time required "
@@ -81,7 +86,7 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 
-int loadSettings(Info* info, char* a, char* b) {
+int loadSettings(Shared* shared, char* a, char* b) {
     int scan1, scan2, bufferSize, requestTime, valid;
     valid = 0; //'boolean'
     scan1 = sscanf(a, "%d", &bufferSize);
@@ -97,8 +102,8 @@ int loadSettings(Info* info, char* a, char* b) {
         printf("Error: The time taken per lift request has been specified as %d, but it must be >= 0\n", requestTime);
     }
     else { //Command line parameters have been validated, hence values are inserted into settings struct
-        info->bufferSize = bufferSize;
-        info->requestTime = requestTime;
+        shared->bufferSize = bufferSize;
+        shared->requestTime = requestTime;
         valid = 1;
     }
     return valid;
