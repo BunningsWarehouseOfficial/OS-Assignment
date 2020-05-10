@@ -1,10 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <pthread.h>
-#include "lift_sim_A.h"
-#include "request_handler.h"
+#include <semaphore.h>
+#include "lift_sim_B.h"
+#include "request_handler_B.h"
 
-void* liftR(void* arg) {
+void liftR(void* arg) {
     FILE* input;
     Shared* shared = (Shared*)arg;
     
@@ -14,49 +14,48 @@ void* liftR(void* arg) {
     }
     else {
         FILE* output = shared->output;
-        int numLines, index;
+        int numLines;
         Request** buffer = shared->buffer;
-        pthread_mutex_t* bufferLock = &shared->bufferLock;
-        pthread_cond_t* cond = &shared->cond;
+        sem_t* mutex = &shared->mutex;
+        sem_t* full = &shared->full;
+        sem_t* empty = &shared->empty;
         
         numLines = shared->remaining; //The initial value of remaining represents the no. of lines in sim_input.txt
         printf("Running simulation...\n");
 
         //Producer loop
         for (int ii = 0; ii < numLines; ii++) {
-            int source, destination;
+            int source, destination, index;
             
-            pthread_mutex_lock(bufferLock);
-            if (shared->empty == 0) {
-                pthread_cond_wait(cond, bufferLock);
-            }
+            sem_wait(empty);
+            sem_wait(mutex);
 
             //Critical section: Adding a request to the buffer
-            index = shared->bufferSize - shared->empty;
+            index = shared->index;
             request(input, buffer[index]);
             source = buffer[index]->source; //Lifts may change this value, hence need to retrieve while mutex is locked
             destination = buffer[index]->destination; //As above
             shared->remaining--;
-            shared->empty--;
-
-            #ifdef VERBOSE
-            printf("Lift-R: #%d\n", ii + 1);
-            #endif
+            shared->index++;
 
             //Logging added request to sim_out.txt
             fprintf(output, "---------------------------------------------\n  ");
             fprintf(output, "New Lift Request From Floor %d to Floor %d\n  ", source, destination);
             fprintf(output, "Request No: %d\n", numLines - shared->remaining);
             fprintf(output, "---------------------------------------------\n\n");
-            pthread_cond_signal(cond);
-            pthread_mutex_unlock(bufferLock);
-            //End critical section
+            //End of critical section
+        
+            #ifdef VERBOSE
+            printf("Lift-R: #%d\n", ii + 1);
+            #endif
+
+            sem_post(mutex);
+            sem_post(full);
         }
     }
 
     fclose(input);
-    pthread_exit(NULL);
-    return(NULL);
+    exit(0);
     //This is where the program unravels and ends, once all requests have been placed into the buffer
 }
 

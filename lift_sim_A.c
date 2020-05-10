@@ -1,16 +1,8 @@
 /* Filename:           lift_sim_A.c
    Author:             Kristian Rados (19764285)
    Date Created:       19/04/2020
-   Date Last Modified: 19/04/2020
+   Date Last Modified: 10/05/2020
    Purpose:                                                                                                           */
-
-//TODO change back executable names to full names
-
-//TODO give each thread an 'info' struct, kind of like the settings struct in UCP assignment
-
-//TODO buffer as an array of pointers to request structs
-
-//TODO merge this file for sim_A and sim_B if possible
 
 //TODO Intro comment text for each .c file
 
@@ -22,13 +14,16 @@
 
 //TODO test checkInput
 
+//TODO thorough valgrind checks
+
+//TODO throw random inline comments here and there
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
-#include <unistd.h>
 #include "lift_sim_A.h"
-#include "request_handler.h"
-#include "lift.h"
+#include "request_handler_A.h"
+#include "lift_A.h"
 
 int main(int argc, char* argv[]) {
     if (argc == 3) {
@@ -47,7 +42,7 @@ int main(int argc, char* argv[]) {
                     pthread_t id[4];
                     pthread_mutex_t bufferLock = PTHREAD_MUTEX_INITIALIZER;
                     pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
-                    Info** info = (Info**)malloc(3 * sizeof(Info*));
+                    Info** info = (Info**)malloc(3 * sizeof(Info*)); //Array of info structs to distribute to threads
 
                     Request** buffer = (Request**)malloc(shared->bufferSize * sizeof(Request*));
                     for (int ii = 0; ii < shared->bufferSize; ii++) {
@@ -74,7 +69,7 @@ int main(int argc, char* argv[]) {
                     }
                     fprintf(output, "Total number of requests: %d\n", numLines);
                     fprintf(output, "Total number of movements: %d", shared->combinedMovement);
-                    printf("\nFinished simulation.\nOutput has been logged to 'sim_out.txt'.\n");
+                    printf("\nFinished simulation. \nOutput has been logged to 'sim_out.txt'.\n");
 
                     pthread_mutex_destroy(&bufferLock);
                     pthread_cond_destroy(&cond);
@@ -116,7 +111,7 @@ int loadSettings(Shared* shared, char* a, char* b) {
     else if (requestTime < 0) {
         printf("Error: The time taken per lift request has been specified as %d, but it must be >= 0\n", requestTime);
     }
-    else { //Command line parameters have been validated, hence values are inserted into settings struct
+    else { //Command line parameters have been validated, hence values are inserted into Shared struct
         shared->bufferSize = bufferSize;
         shared->requestTime = requestTime;
         shared->empty = shared->bufferSize; //Initialising empty as size of buffer, indicating that the buffer is empty

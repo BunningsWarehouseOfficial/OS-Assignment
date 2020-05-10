@@ -1,9 +1,9 @@
 #include <stdlib.h>
-#include <stdio.h> //
+#include <stdio.h>
 #include <pthread.h>
 #include <unistd.h>
 #include "lift_sim_A.h"
-#include "lift.h"
+#include "lift_A.h"
 
 void* lift(void* arg) {
     int currentFloor, consuming;
@@ -17,7 +17,8 @@ void* lift(void* arg) {
     info->liftMovement = 0;
     currentFloor = 1;
 
-    //BUG freezes at end if m < 3 and t == 0
+    //BUG freezes at end if m < 3 and t == 0, also freezes randomly with t == 0
+    //used timedwait so that while condition is checked a second time if producer doesn't produce anything
     while (shared->remaining > 0) {
         pthread_mutex_lock(bufferLock);
         while (shared->empty == shared->bufferSize) {
@@ -30,7 +31,7 @@ void* lift(void* arg) {
         shared->empty++;
         pthread_cond_signal(cond);
         pthread_mutex_unlock(bufferLock);
-        //End critical section
+        //End of critical section
 
         sleep(shared->requestTime);
     }
@@ -49,7 +50,7 @@ void executeRequest(int* currentFloor, FILE* output, Info* info, Request* reques
     info->liftMovement += movement;
     shared->combinedMovement += movement;
 
-    #ifdef VERBOSE
+    #ifdef VERBOSE //Provides visual indication of simulation progress
     printf("Lift-%d: %d -> %d -> %d\n", info->liftNo, *currentFloor, request->source, request->destination);
     #endif
     
