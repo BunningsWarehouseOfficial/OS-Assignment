@@ -40,7 +40,7 @@ void* liftR(void* arg) {
             shared->empty--;
 
             #ifdef VERBOSE
-            printf("R: #%d\n", ii + 1);
+            printf("Lift-R: #%d\n", ii + 1);
             #endif
 
             //Logging added request to sim_out.txt

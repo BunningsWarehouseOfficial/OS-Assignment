@@ -17,6 +17,7 @@ void* lift(void* arg) {
     info->liftMovement = 0;
     currentFloor = 1;
 
+    //BUG freezes at end if m < 3 and t == 0
     while (shared->remaining > 0) {
         pthread_mutex_lock(bufferLock);
         while (shared->empty == shared->bufferSize) {
@@ -49,7 +50,7 @@ void executeRequest(int* currentFloor, FILE* output, Info* info, Request* reques
     shared->combinedMovement += movement;
 
     #ifdef VERBOSE
-    printf("L%d: %d -> %d -> %d\n", info->liftNo, *currentFloor, request->source, request->destination);
+    printf("Lift-%d: %d -> %d -> %d\n", info->liftNo, *currentFloor, request->source, request->destination);
     #endif
     
     //Logging executed request to sim_out.txt

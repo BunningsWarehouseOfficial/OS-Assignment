@@ -2,8 +2,8 @@ CC = gcc
 CFLAGS = -Wall -Werror -std=c99 -g
 OBJ1 = lift_sim_A.o request_handler.o lift.o
 OBJ2 = lift_sim_B.o
-EXEC1 = A
-EXEC2 = B
+EXEC1 = lift_sim_A
+EXEC2 = lift_sim_B
 
 ifdef VERBOSE
 CFLAGS += -D VERBOSE

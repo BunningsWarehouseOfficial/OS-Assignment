@@ -94,8 +94,8 @@ int main(int argc, char* argv[]) {
         free(shared);
     }
     else { //Error for running executable on command line incorrectly
-        printf("Error: Program must be run as [lift_sim_A m t] where m is the buffer size and t is the time required "
-               "per lift request\n");
+        printf("Error: Program must be run as 'lift_sim_A [m] [t]' where m is the buffer size and t is the time "
+               "required per lift request\n");
     }
 
     return 0;
