@@ -2,6 +2,6 @@
 #define LIFT_H
 
 void* lift(void* arg);
-void executeRequest(int* currentFloor, Request* request);
+void executeRequest(int* currentFloor, FILE* output, Info* info, Request* request);
 
 #endif

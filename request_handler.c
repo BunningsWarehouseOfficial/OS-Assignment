@@ -13,28 +13,41 @@ void* liftR(void* arg) {
         perror("Error opening sim_input.txt\n");
     }
     else {
+        FILE* output = shared->output;
+        int numLines, index;
         Request** buffer = shared->buffer;
         pthread_mutex_t* bufferLock = &shared->bufferLock;
         pthread_cond_t* cond = &shared->cond;
-        int numLines = shared->remaining; //The initial value of remaining represents the no. of lines in sim_input.txt
-        shared->empty = shared->bufferSize; //Initialising empty to indicate that the buffer is empty
+        
+        numLines = shared->remaining; //The initial value of remaining represents the no. of lines in sim_input.txt
+        printf("Running simulation...\n");
 
         //Producer loop
         for (int ii = 0; ii < numLines; ii++) {
-            //printf("R for loop ii=%d\n", ii); //
+            int source, destination;
+            
             pthread_mutex_lock(bufferLock);
             if (shared->empty == 0) {
-                printf("R wait\n\n"); //
                 pthread_cond_wait(cond, bufferLock);
             }
 
-            //FIXME I shouldn't be mallocing a request every time I go into critical section
             //Critical section: Adding a request to the buffer
-            printf("R Producing buffer[%d]\n", shared->bufferSize - shared->empty); //
-            request(f, buffer[shared->bufferSize - shared->empty]);
-            shared->empty--;
+            index = shared->bufferSize - shared->empty;
+            request(input, buffer[index]);
+            source = buffer[index]->source; //Lifts may change this value, hence need to retrieve while mutex is locked
+            destination = buffer[index]->destination; //As above
             shared->remaining--;
-            printf("    R %d requests remaining\n", shared->remaining); // 
+            shared->empty--;
+
+            #ifdef VERBOSE
+            printf("R: #%d\n", ii + 1);
+            #endif
+
+            //Logging added request to sim_out.txt
+            fprintf(output, "---------------------------------------------\n  ");
+            fprintf(output, "New Lift Request From Floor %d to Floor %d\n  ", source, destination);
+            fprintf(output, "Request No: %d\n", numLines - shared->remaining);
+            fprintf(output, "---------------------------------------------\n\n");
             pthread_cond_signal(cond);
             pthread_mutex_unlock(bufferLock);
             //End critical section
@@ -44,7 +57,7 @@ void* liftR(void* arg) {
     fclose(input);
     pthread_exit(NULL);
     return(NULL);
-    //TODO End the whole simulation/program here
+    //This is where the program unravels and ends, once all requests have been placed into the buffer
 }
 
 //Lift-R - getting one request at a time
@@ -57,7 +70,7 @@ void request(FILE* input, Request* request) { //TODO make sure that 'valid' retu
         request->destination = destination;
     }
     else {
-        printf("Error: problem handling request\n"); //TODO remove this and add assertion if 'valid' is NEVER required
+        printf("Error: problem handling request\n");
     }
 }
 

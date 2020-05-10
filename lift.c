@@ -6,48 +6,63 @@
 #include "lift.h"
 
 void* lift(void* arg) {
-    int liftNo, currentFloor, consuming;
+    int currentFloor, consuming;
     Info* info = (Info*)arg;
     Shared* shared = info->shared;
     Request** buffer = shared->buffer;
     pthread_mutex_t* bufferLock = &shared->bufferLock;
     pthread_cond_t* cond = &shared->cond;
     
-    Request* request;
+    info->executed = 0;
+    info->liftMovement = 0;
     currentFloor = 1;
-    liftNo = info->liftNo;
 
     while (shared->remaining > 0) {
         pthread_mutex_lock(bufferLock);
-        if (shared->empty == shared->bufferSize) {
-            printf("L%d wait\n", liftNo); //
+        while (shared->empty == shared->bufferSize) {
             pthread_cond_wait(cond, bufferLock);
         }
-
+        
         //Critical section: Taking a request out of the buffer
         consuming = (shared->bufferSize - 1) - shared->empty;
-        request = buffer[consuming];
+        executeRequest(&currentFloor, shared->output, info, buffer[consuming]);
         shared->empty++;
         pthread_cond_signal(cond);
         pthread_mutex_unlock(bufferLock);
         //End critical section
 
-        printf("L%d Consumed request buffer[%d]\n", liftNo, consuming); //
         sleep(shared->requestTime);
-        executeRequest(&currentFloor, request);
     }
-    
-    //BUG there was a random segfault right after two threads did their first consumption that doesn't always happen
 
     pthread_exit(NULL);
     return NULL;
 }
 
-void executeRequest(int* currentFloor, Request* request) {
-    //BUG request is segfaulting
-    printf("%d -> %d -> %d\n", *currentFloor, request->source, request->destination);
-    *currentFloor = request->destination;
+void executeRequest(int* currentFloor, FILE* output, Info* info, Request* request) {
+    Shared* shared = info->shared;
+    int movement, source, destination;
     
-    //TODO separate into separate function if suitable
-    //Logging
+    source = request->source;
+    destination = request->destination;
+    movement = abs(*currentFloor - source) + abs(source - destination);
+    info->liftMovement += movement;
+    shared->combinedMovement += movement;
+
+    #ifdef VERBOSE
+    printf("L%d: %d -> %d -> %d\n", info->liftNo, *currentFloor, request->source, request->destination);
+    #endif
+    
+    //Logging executed request to sim_out.txt
+    fprintf(output, "Lift-%d Operation\n", info->liftNo);
+    fprintf(output, "Previous position: Floor %d\n", *currentFloor);
+    fprintf(output, "Request: Floor %d to Floor %d\n", source, destination);
+    fprintf(output, "Detail operations:\n    ");
+    fprintf(output, "Go from Floor %d to Floor %d\n    ", *currentFloor, source); //current -> source
+    fprintf(output, "Go from Floor %d to Floor %d\n    ", source, destination); //source -> destination
+    fprintf(output, "#movement for this request: %d\n    ", movement);
+    fprintf(output, "#request: %d\n    ", ++info->executed); //The number of requests this lift has executed
+    fprintf(output, "Total #movement: %d\n", info->liftMovement); //Total movement of this lift
+    fprintf(output, "Current position: Floor %d\n\n", destination);
+    
+    *currentFloor = destination;
 }

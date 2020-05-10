@@ -5,9 +5,9 @@ OBJ2 = lift_sim_B.o
 EXEC1 = A
 EXEC2 = B
 
-ifdef DEBUG
-CFLAGS += -D DEBUG
-DEBUG : clean $(EXEC)
+ifdef VERBOSE
+CFLAGS += -D VERBOSE
+VERBOSE : clean $(EXEC1) $(EXEC2)
 endif
 
 all : $(EXEC1) $(EXEC2)
