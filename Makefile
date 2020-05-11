@@ -4,6 +4,7 @@ OBJ1 = lift_sim_A.o request_handler_A.o lift_A.o
 OBJ2 = lift_sim_B.o request_handler_B.o lift_B.o
 EXEC1 = lift_sim_A
 EXEC2 = lift_sim_B
+OUTPUT = sim_out.txt
 
 ifdef VERBOSE
 CFLAGS += -D VERBOSE
@@ -37,4 +38,4 @@ lift_B.o : lift_B.c lift_B.h
 	$(CC) -c lift_B.c $(CFLAGS)
 
 clean:
-	rm -f $(EXEC1) $(EXEC2) $(OBJ1) $(OBJ2)
+	rm -f $(EXEC1) $(EXEC2) $(OBJ1) $(OBJ2) $(OUTPUT)

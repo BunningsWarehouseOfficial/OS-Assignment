@@ -26,21 +26,21 @@ void liftR(void* arg) {
         //Producer loop
         for (int ii = 0; ii < numLines; ii++) {
             int source, destination, index;
-            int testi = 0; //
-            int* test = &testi; //
+            //int testi = 0; //
+            //int* test = &testi; //
             
-            sem_getvalue(empty, test); //
-            printf("R wait empty %d--\n", *test); //
+              //sem_getvalue(empty, test); //
+              //printf("  R wait empty %d--\n", *test); //
             sem_wait(empty);
-            sem_getvalue(mutex, test); //
-            printf("R wait mutex %d--\n", *test); //
+              //sem_getvalue(mutex, test); //
+              //printf("  R wait mutex %d--\n", *test); //
             sem_wait(mutex);
 
             //Critical section: Adding a request to the buffer
             index = shared->index;
             request(input, buffer[index]);
-            source = buffer[index]->source; //Lifts may change this value, hence need to retrieve while mutex is locked
-            destination = buffer[index]->destination; //As above
+            source = buffer[index]->source;
+            destination = buffer[index]->destination;
             shared->remaining--;
             shared->index++;
         
@@ -48,18 +48,20 @@ void liftR(void* arg) {
             printf("Lift-R: #%d\n", ii + 1);
             //#endif
 
+            printf("+ R logging\n\n"); //
             //Logging added request to sim_out.txt
             fprintf(output, "---------------------------------------------\n  ");
             fprintf(output, "New Lift Request From Floor %d to Floor %d\n  ", source, destination);
             fprintf(output, "Request No: %d\n", numLines - shared->remaining);
             fprintf(output, "---------------------------------------------\n\n");
+            fflush(output);
             //End of critical section
 
-            sem_getvalue(mutex, test); //
-            printf("R post mutex %d++\n", *test); //
+              //sem_getvalue(mutex, test); //
+              //printf("  R post mutex %d++\n", *test); //
             sem_post(mutex);
-            sem_getvalue(full, test); //
-            printf("R post full %d++\n", *test); //
+              //sem_getvalue(full, test); //
+              //printf("  R post full %d++\n\n", *test); //
             sem_post(full);
         }
     }
@@ -110,17 +112,16 @@ int checkInput(int* remaining) {
                 }
                 else if (a == b) {
                     printf("Error: Source and destination floors can not be equal (sim_input.txt line %d)\n", *remaining);
+                    valid = 0;
                 }
             } 
             line = fscanf(f, "%d %d\n", &a, &b);
         }
 
-        if (*remaining < 50 || *remaining > 100) {
+        //Only checks if valid == 1 to avoid printing the error if it was likely caused by the loop being cut short
+        if ((*remaining < 50 || *remaining > 100) && valid == 1) {
             printf("Error: Incorrect format in sim_input line, must be between 50 and 100 requests (lines)\n");
             valid = 0;
-        }
-        else {
-            valid = 1;
         }
     }
     

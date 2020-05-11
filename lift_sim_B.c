@@ -58,6 +58,9 @@ int main(int argc, char* argv[]) {
                     }
                     shared->output = output; 
                     shared->buffer = buffer;
+                    shared->mutex = mutex;
+                    shared->full = full;
+                    shared->empty = empty;
                     numLines = shared->remaining; //The initial value of remaining represents the no. of lines in input
 
                     //Initialising the Info structs for the lifts
@@ -75,7 +78,7 @@ int main(int argc, char* argv[]) {
                     for (int nn = 0; nn < 3; nn++) { //Creating the three consumer child processes
                         if (fork() == 0) {
                             printf("L fork\n"); //
-                            lift((void*)info[nn + 1]);
+                            lift((void*)info[nn]);
                         }
                     }
 

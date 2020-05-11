@@ -34,8 +34,8 @@ void* liftR(void* arg) {
             //Critical section: Adding a request to the buffer
             index = shared->bufferSize - shared->empty;
             request(input, buffer[index]);
-            source = buffer[index]->source; //Lifts may change this value, hence need to retrieve while mutex is locked
-            destination = buffer[index]->destination; //As above
+            source = buffer[index]->source;
+            destination = buffer[index]->destination;
             shared->remaining--;
             shared->empty--;
 
@@ -101,17 +101,16 @@ int checkInput(int* remaining) {
                 }
                 else if (a == b) {
                     printf("Error: Source and destination floors can not be equal (sim_input.txt line %d)\n", *remaining);
+                    valid == 0;
                 }
             } 
             line = fscanf(f, "%d %d\n", &a, &b);
         }
-
-        if (*remaining < 50 || *remaining > 100) {
+        
+        //Only checks if valid == 1 to avoid printing the error if it was likely caused by the loop being cut short
+        if ((*remaining < 50 || *remaining > 100) && valid == 1) {
             printf("Error: Incorrect format in sim_input line, must be between 50 and 100 requests (lines)\n");
             valid = 0;
-        }
-        else {
-            valid = 1;
         }
     }
     
