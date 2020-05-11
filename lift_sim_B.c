@@ -34,7 +34,6 @@
 
 int main(int argc, char* argv[]) {
     if (argc == 3) {
-        //Shared* shared = (Shared*)malloc(sizeof(Shared));
         Shared* shared = (Shared*)sharedMMap(sizeof(Shared));
 
         if (loadSettings(shared, argv[1], argv[2]) == 1) {
@@ -53,10 +52,8 @@ int main(int argc, char* argv[]) {
                     sem_init(&empty, 1, shared->bufferSize);
 
                     //Initialising the Shared struct and the buffer
-                    //Request** buffer = (Request**)malloc(shared->bufferSize * sizeof(Request*));
                     Request** buffer = (Request**)sharedMMap(shared->bufferSize * sizeof(Request*));
                     for (int ii = 0; ii < shared->bufferSize; ii++) {
-                        //buffer[ii] = (Request*)malloc(sizeof(Request));
                         buffer[ii] = (Request*)sharedMMap(sizeof(Request));
                         printf("---\n"); //
                     }
@@ -65,10 +62,8 @@ int main(int argc, char* argv[]) {
                     numLines = shared->remaining; //The initial value of remaining represents the no. of lines in input
 
                     //Initialising the Info structs for the lifts
-                    //Info** info = (Info**)malloc(3 * sizeof(Info*)); //Array of info structs to distribute to processes
                     Info** info = (Info**)sharedMMap(3 * sizeof(Info*));
                     for (int jj = 1; jj <= 3; jj++) {
-                        //info[jj - 1] = (Info*)malloc(sizeof(Info));
                         info[jj - 1] = (Info*)sharedMMap(sizeof(Info));
                         info[jj - 1]->liftNo = jj;
                         info[jj - 1]->shared = shared;

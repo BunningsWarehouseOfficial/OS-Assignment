@@ -1,12 +1,16 @@
+#define _GNU_SOURCE //Fixes VSCODE issue where 'CLOCK_REALTIME' isn't recognised
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <time.h>
+#include <errno.h>
 #include "lift_sim_A.h"
 #include "lift_A.h"
 
 void* lift(void* arg) {
-    int currentFloor, consuming;
+    int currentFloor, consuming, timeout;
     Info* info = (Info*)arg;
     Shared* shared = info->shared;
     Request** buffer = shared->buffer;
@@ -17,23 +21,27 @@ void* lift(void* arg) {
     info->liftMovement = 0;
     currentFloor = 1;
 
-    //BUG freezes at end if m < 3 and t == 0, also freezes randomly with t == 0
-    //used timedwait so that while condition is checked a second time if producer doesn't produce anything
     while (shared->remaining > 0) {
         pthread_mutex_lock(bufferLock);
-        while (shared->empty == shared->bufferSize) {
-            pthread_cond_wait(cond, bufferLock);
+        while (shared->empty == shared->bufferSize && timeout != ETIMEDOUT) {
+            struct timespec timeoutTime = {0, 0};
+            clock_gettime(CLOCK_REALTIME, &timeoutTime);
+            timeoutTime.tv_sec += 1; //Timeout time of 0.5 seconds
+            
+            timeout = pthread_cond_timedwait(cond, bufferLock, &timeoutTime);
         }
-        
-        //Critical section: Taking a request out of the buffer
-        consuming = (shared->bufferSize - 1) - shared->empty;
-        executeRequest(&currentFloor, shared->output, info, buffer[consuming]);
-        shared->empty++;
+
+        if (timeout != ETIMEDOUT) {
+            //Critical section: Taking a request out of the buffer
+            consuming = (shared->bufferSize - 1) - shared->empty;
+            executeRequest(&currentFloor, shared->output, info, buffer[consuming]);
+            shared->empty++;
+            //End of critical section
+
+            sleep(shared->requestTime);
+        }
         pthread_cond_signal(cond);
         pthread_mutex_unlock(bufferLock);
-        //End of critical section
-
-        sleep(shared->requestTime);
     }
 
     pthread_exit(NULL);
