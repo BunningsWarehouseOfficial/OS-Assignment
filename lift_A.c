@@ -26,7 +26,7 @@ void* lift(void* arg) {
         while (shared->empty == shared->bufferSize && timeout != ETIMEDOUT) {
             struct timespec timeoutTime = {0, 0};
             clock_gettime(CLOCK_REALTIME, &timeoutTime);
-            timeoutTime.tv_sec += 1; //Timeout time of 0.5 seconds
+            timeoutTime.tv_nsec += 200000000; //Timeout time of 0.2 seconds
             
             timeout = pthread_cond_timedwait(cond, bufferLock, &timeoutTime);
         }
@@ -36,12 +36,16 @@ void* lift(void* arg) {
             consuming = (shared->bufferSize - 1) - shared->empty;
             executeRequest(&currentFloor, shared->output, info, buffer[consuming]);
             shared->empty++;
+            pthread_cond_signal(cond);
+            pthread_mutex_unlock(bufferLock);
             //End of critical section
 
             sleep(shared->requestTime);
         }
-        pthread_cond_signal(cond);
-        pthread_mutex_unlock(bufferLock);
+        else { //Needed in the case that two lifs timeout to prevent an infinite cond wait without an extra sleep()
+            pthread_cond_signal(cond);
+            pthread_mutex_unlock(bufferLock);
+        }
     }
 
     pthread_exit(NULL);

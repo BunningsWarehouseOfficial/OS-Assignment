@@ -55,7 +55,6 @@ int main(int argc, char* argv[]) {
                     Request** buffer = (Request**)sharedMMap(shared->bufferSize * sizeof(Request*));
                     for (int ii = 0; ii < shared->bufferSize; ii++) {
                         buffer[ii] = (Request*)sharedMMap(sizeof(Request));
-                        printf("---\n"); //
                     }
                     shared->output = output; 
                     shared->buffer = buffer;
@@ -70,10 +69,12 @@ int main(int argc, char* argv[]) {
                     }
 
                     if (fork() == 0) { //Creating the producer process
+                        printf("R fork\n"); //
                         liftR((void*)shared);
                     }
                     for (int nn = 0; nn < 3; nn++) { //Creating the three consumer child processes
                         if (fork() == 0) {
+                            printf("L fork\n"); //
                             lift((void*)info[nn + 1]);
                         }
                     }

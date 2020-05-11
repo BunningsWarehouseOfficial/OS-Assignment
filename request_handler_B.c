@@ -26,8 +26,14 @@ void liftR(void* arg) {
         //Producer loop
         for (int ii = 0; ii < numLines; ii++) {
             int source, destination, index;
+            int testi = 0; //
+            int* test = &testi; //
             
+            sem_getvalue(empty, test); //
+            printf("R wait empty %d--\n", *test); //
             sem_wait(empty);
+            sem_getvalue(mutex, test); //
+            printf("R wait mutex %d--\n", *test); //
             sem_wait(mutex);
 
             //Critical section: Adding a request to the buffer
@@ -37,6 +43,10 @@ void liftR(void* arg) {
             destination = buffer[index]->destination; //As above
             shared->remaining--;
             shared->index++;
+        
+            //#ifdef VERBOSE
+            printf("Lift-R: #%d\n", ii + 1);
+            //#endif
 
             //Logging added request to sim_out.txt
             fprintf(output, "---------------------------------------------\n  ");
@@ -44,12 +54,12 @@ void liftR(void* arg) {
             fprintf(output, "Request No: %d\n", numLines - shared->remaining);
             fprintf(output, "---------------------------------------------\n\n");
             //End of critical section
-        
-            #ifdef VERBOSE
-            printf("Lift-R: #%d\n", ii + 1);
-            #endif
 
+            sem_getvalue(mutex, test); //
+            printf("R post mutex %d++\n", *test); //
             sem_post(mutex);
+            sem_getvalue(full, test); //
+            printf("R post full %d++\n", *test); //
             sem_post(full);
         }
     }

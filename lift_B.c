@@ -18,21 +18,31 @@ void lift(void* arg) {
     info->liftMovement = 0;
     currentFloor = 1;
 
-    //BUG freezes at end if m < 3 and t == 0, also freezes randomly with t == 0
+    int testi = 0; //
+    int* test = &testi; //
+
+    //FIXME may possibly freeze at end if m < 3 and t == 0, also randomly with t == 0
     while (shared->remaining > 0) {
+        sem_getvalue(full, test); //
+        printf("L%d wait full %d--\n", info->liftNo, *test); //
         sem_wait(full);
+        sem_getvalue(mutex, test); //
+        printf("L%d wait mutex %d--\n", info->liftNo, *test); //
         sem_wait(mutex);
 
         //Critical section: Taking a request out of the buffer
         executeRequest(&currentFloor, shared->output, info, buffer[shared->index]);
         //End of critical section
 
+        sem_getvalue(mutex, test); //
+        printf("L%d post mutex %d++\n", info->liftNo, *test); //
         sem_post(mutex);
+        sem_getvalue(empty, test); //
+        printf("L%d post empty %d++\n", info->liftNo, *test); //
         sem_post(empty);
 
         sleep(shared->requestTime);
     }
-
     exit(0);
 }
 
@@ -46,9 +56,9 @@ void executeRequest(int* currentFloor, FILE* output, Info* info, Request* reques
     info->liftMovement += movement;
     shared->combinedMovement += movement;
 
-    #ifdef VERBOSE //Provides visual indication of simulation progress
+    //#ifdef VERBOSE //Provides visual indication of simulation progress
     printf("Lift-%d: %d -> %d -> %d\n", info->liftNo, *currentFloor, request->source, request->destination);
-    #endif
+    //#endif
     
     //Logging executed request to sim_out.txt
     fprintf(output, "Lift-%d Operation\n", info->liftNo);
