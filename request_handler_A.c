@@ -61,7 +61,7 @@ void* liftR(void* arg) {
 }
 
 //Lift-R - getting one request at a time
-void request(FILE* input, Request* request) { //TODO make sure that 'valid' return is not required
+void request(FILE* input, Request* request) {
     int line, source, destination;
 
     line = fscanf(input, "%d %d\n", &source, &destination);
@@ -91,17 +91,18 @@ int checkInput(int* remaining) {
                 (*remaining)++; //Tallying after fscanf() so as to not include 'empty' EOF lines in count
 
                 if (line != 2) {
-                    if (line == EOF) { printf("EOF!\n"); }
-                    printf("Error: Format must be two numbers separated by a space (sim_input.txt line %d)\n", *remaining);
+                    printf("Error: Format must be two integers separated by a space (sim_input.txt request %d)\n",
+                           *remaining);
                     valid = 0;
                 }
                 else if (a > 20 || b > 20 || a < 1 || b < 1) {
-                    printf("Error: Values must be between 1 and 20 (sim_input.txt line %d)\n", *remaining);
+                    printf("Error: Values must be between 1 and 20 (sim_input.txt request %d)\n", *remaining);
                     valid = 0;
                 }
                 else if (a == b) {
-                    printf("Error: Source and destination floors can not be equal (sim_input.txt line %d)\n", *remaining);
-                    valid == 0;
+                    printf("Error: Source and destination floors can not be equal (sim_input.txt request %d)\n", 
+                           *remaining);
+                    valid = 0;
                 }
             } 
             line = fscanf(f, "%d %d\n", &a, &b);

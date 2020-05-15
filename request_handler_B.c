@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <semaphore.h>
+#include <string.h>
 #include "lift_sim_B.h"
 #include "request_handler_B.h"
 
@@ -26,14 +27,8 @@ void liftR(void* arg) {
         //Producer loop
         for (int ii = 0; ii < numLines; ii++) {
             int source, destination, index;
-            //int testi = 0; //
-            //int* test = &testi; //
             
-              //sem_getvalue(empty, test); //
-              //printf("  R wait empty %d--\n", *test); //
             sem_wait(empty);
-              //sem_getvalue(mutex, test); //
-              //printf("  R wait mutex %d--\n", *test); //
             sem_wait(mutex);
 
             //Critical section: Adding a request to the buffer
@@ -44,11 +39,10 @@ void liftR(void* arg) {
             shared->remaining--;
             shared->index++;
         
-            //#ifdef VERBOSE
+            #ifdef VERBOSE //Provides visual indication of simulation progress
             printf("Lift-R: #%d\n", ii + 1);
-            //#endif
+            #endif
 
-            printf("+ R logging\n\n"); //
             //Logging added request to sim_out.txt
             fprintf(output, "---------------------------------------------\n  ");
             fprintf(output, "New Lift Request From Floor %d to Floor %d\n  ", source, destination);
@@ -57,11 +51,7 @@ void liftR(void* arg) {
             fflush(output);
             //End of critical section
 
-              //sem_getvalue(mutex, test); //
-              //printf("  R post mutex %d++\n", *test); //
             sem_post(mutex);
-              //sem_getvalue(full, test); //
-              //printf("  R post full %d++\n\n", *test); //
             sem_post(full);
         }
     }
@@ -72,7 +62,7 @@ void liftR(void* arg) {
 }
 
 //Lift-R - getting one request at a time
-void request(FILE* input, Request* request) { //TODO make sure that 'valid' return is not required
+void request(FILE* input, Request* request) {
     int line, source, destination;
 
     line = fscanf(input, "%d %d\n", &source, &destination);
@@ -95,26 +85,27 @@ int checkInput(int* remaining) {
     }
     else {
         int line, a, b;
-
+        
         line = fscanf(f, "%d %d\n", &a, &b);
-        while (valid == 1 && line != EOF) {            
+        while (valid == 1 && line != EOF) { 
             if (line != EOF) {
                 (*remaining)++; //Tallying after fscanf() so as to not include 'empty' EOF lines in count
 
                 if (line != 2) {
-                    if (line == EOF) { printf("EOF!\n"); }
-                    printf("Error: Format must be two numbers separated by a space (sim_input.txt line %d)\n", *remaining);
+                    printf("Error: Format must be two integers separated by a space (sim_input.txt request %d)\n",
+                           *remaining);
                     valid = 0;
                 }
                 else if (a > 20 || b > 20 || a < 1 || b < 1) {
-                    printf("Error: Values must be between 1 and 20 (sim_input.txt line %d)\n", *remaining);
+                    printf("Error: Values must be between 1 and 20 (sim_input.txt request %d)\n", *remaining);
                     valid = 0;
                 }
                 else if (a == b) {
-                    printf("Error: Source and destination floors can not be equal (sim_input.txt line %d)\n", *remaining);
+                    printf("Error: Source and destination floors can not be equal (sim_input.txt request %d)\n",
+                           *remaining);
                     valid = 0;
                 }
-            } 
+            }
             line = fscanf(f, "%d %d\n", &a, &b);
         }
 

@@ -1,12 +1,16 @@
+#define _GNU_SOURCE //Fixes VSCODE issue where 'CLOCK_REALTIME' isn't recognised
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <semaphore.h>
+#include <time.h>
+#include <errno.h>
 #include "lift_sim_B.h"
 #include "lift_B.h"
 
 void lift(void* arg) {
-    int currentFloor;
+    int currentFloor, initial;
     Info* info = (Info*)arg;
     Shared* shared = info->shared;
     Request** buffer = shared->buffer;
@@ -17,28 +21,28 @@ void lift(void* arg) {
     info->executed = 0;
     info->liftMovement = 0;
     currentFloor = 1;
+    initial = shared->remaining; // ?
 
-    //int testi = 0; //
-    //int* test = &testi; //
-
-    //FIXME may possibly freeze at end if m < 3 and t == 0, also randomly with t == 0
     while (shared->remaining > 0) {
-          //sem_getvalue(full, test); //
-          //printf("  L%d wait full %d--\n", info->liftNo, *test); //
-        sem_wait(full);
-          //sem_getvalue(mutex, test); //
-          //printf("  L%d wait mutex %d--\n", info->liftNo, *test); //
-        sem_wait(mutex);
+        struct timespec timeoutTime = {0, 0};
+        clock_gettime(CLOCK_REALTIME, &timeoutTime);
+        timeoutTime.tv_nsec += 500000000; //Timeout time of 0.5 seconds
+
+        //The initial case: no timeouts so as to prevent deadlock occurring at the beginning due to a slow producer
+        if (shared->remaining == initial) {
+            sem_wait(full);
+            sem_wait(mutex);
+        }
+        else { //Standard waits: they timeout to prevent the final lift process becoming stuck in deadlock
+            sem_timedwait(full, &timeoutTime);
+            sem_timedwait(mutex, &timeoutTime);
+        }
 
         //Critical section: Taking a request out of the buffer
         executeRequest(&currentFloor, shared->output, info, buffer[shared->index - 1]);
         //End of critical section
 
-          //sem_getvalue(mutex, test); //
-          //printf("  L%d post mutex %d++\n", info->liftNo, *test); //
         sem_post(mutex);
-          //sem_getvalue(empty, test); //
-          //printf("  L%d post empty %d++\n\n", info->liftNo, *test); //
         sem_post(empty);
 
         sleep(shared->requestTime);
@@ -57,11 +61,10 @@ void executeRequest(int* currentFloor, FILE* output, Info* info, Request* reques
     shared->combinedMovement += movement;
     shared->index--;
 
-    //#ifdef VERBOSE //Provides visual indication of simulation progress
+    #ifdef VERBOSE //Provides visual indication of simulation progress
     printf("Lift-%d: %d -> %d -> %d\n", info->liftNo, *currentFloor, request->source, request->destination);
-    //#endif
+    #endif
 
-    printf("+ L%d logging\n\n", info->liftNo); //
     //Logging executed request to sim_out.txt
     fprintf(output, "Lift-%d Operation\n", info->liftNo);
     fprintf(output, "Previous position: Floor %d\n", *currentFloor);

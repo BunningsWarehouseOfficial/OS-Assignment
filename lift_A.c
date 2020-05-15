@@ -26,7 +26,7 @@ void* lift(void* arg) {
         while (shared->empty == shared->bufferSize && timeout != ETIMEDOUT) {
             struct timespec timeoutTime = {0, 0};
             clock_gettime(CLOCK_REALTIME, &timeoutTime);
-            timeoutTime.tv_nsec += 200000000; //Timeout time of 0.2 seconds
+            timeoutTime.tv_nsec += 500000000; //Timeout time of 0.5 seconds
             
             timeout = pthread_cond_timedwait(cond, bufferLock, &timeoutTime);
         }

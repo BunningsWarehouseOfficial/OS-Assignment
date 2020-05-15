@@ -72,19 +72,17 @@ int main(int argc, char* argv[]) {
                     }
 
                     if (fork() == 0) { //Creating the producer process
-                        printf("R fork\n"); //
                         liftR((void*)shared);
                     }
                     for (int nn = 0; nn < 3; nn++) { //Creating the three consumer child processes
                         if (fork() == 0) {
-                            printf("L fork\n"); //
                             lift((void*)info[nn]);
                         }
                     }
 
                     //Waiting for the processes to finish executing
                     for (int kk = 0; kk < 4; kk++) {
-                        wait(NULL); //Join so main waits until threads finish, start with id[0], liftR
+                        wait(NULL); //Join so that main waits until threads finish: start with id[0], ie. liftR
                     }
                     fprintf(output, "Total number of requests: %d\n", numLines);
                     fprintf(output, "Total number of movements: %d", shared->combinedMovement);
