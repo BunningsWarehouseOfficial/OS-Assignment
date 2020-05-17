@@ -1,22 +1,9 @@
 /* Filename:           lift_sim_A.c
    Author:             Kristian Rados (19764285)
    Date Created:       19/04/2020
-   Date Last Modified: 10/05/2020
-   Purpose:                                                                                                           */
-
-//TODO Intro comment text for each .c file
-
-//TODO 'PURPOSE:' before each function... just follow same commenting format as UCP assigment
-
-//TODO Comment explaining any error message prints
-
-//TODO Make sure I don't have any redundant #include statements
-
-//TODO test checkInput
-
-//TODO thorough valgrind checks
-
-//TODO throw random inline comments here and there
+   Date Last Modified: 17/05/2020
+   Purpose: This is the primary thread that controls the other threads. It houses the main() function where the other
+            threads are created and managed. */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -25,14 +12,18 @@
 #include "request_handler_A.h"
 #include "lift_A.h"
 
+/* PURPOSE: The main method for the simulation. It checks that the command parameters are valid before allocating
+memory for all the necessary shared variables such as the buffer. It then creates the four threads and waits for them 
+to finish. */
 int main(int argc, char* argv[]) {
     if (argc == 3) {
+        //Creating the struct that will contain all the data that needs to be shared between the threads
         Shared* shared = (Shared*)malloc(sizeof(Shared));
 
         if (loadSettings(shared, argv[1], argv[2]) == 1) {
             FILE* output;
             
-            output = fopen("sim_out.txt", "w");
+            output = fopen("sim_out.txt", "w"); //Opening the output (logging) file
             if (output == NULL) {
                 perror("Error opening sim_out.txt\n");
             }
@@ -44,10 +35,12 @@ int main(int argc, char* argv[]) {
                     pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
                     Info** info = (Info**)malloc(3 * sizeof(Info*)); //Array of info structs to distribute to threads
 
+                    //Creating the requests buffer
                     Request** buffer = (Request**)malloc(shared->bufferSize * sizeof(Request*));
                     for (int ii = 0; ii < shared->bufferSize; ii++) {
                         buffer[ii] = (Request*)malloc(sizeof(Request));
                     }
+                    //Initialising the Shared struct
                     shared->output = output; 
                     shared->buffer = buffer;
                     shared->bufferLock = bufferLock;
@@ -57,6 +50,7 @@ int main(int argc, char* argv[]) {
                     //Creating the threads
                     pthread_create(&id[0], NULL, liftR, (void*)shared);
                     for (int jj = 1; jj <= 3; jj++) {
+                        //Initialising the Info structs that hold the data needed by the individual lift threads
                         info[jj - 1] = (Info*)malloc(sizeof(Info));
                         info[jj - 1]->liftNo = jj;
                         info[jj - 1]->shared = shared;
@@ -67,12 +61,13 @@ int main(int argc, char* argv[]) {
                     for (int kk = 0; kk < 4; kk++) {
                         pthread_join(id[kk], NULL); //Join so main waits until threads finish, start with id[0], liftR
                     }
-                    fprintf(output, "Total number of requests: %d\n", numLines);
+                    fprintf(output, "Total number of requests: %d\n", numLines); //Final two writes to output log
                     fprintf(output, "Total number of movements: %d", shared->combinedMovement);
                     printf("\nFinished simulation. \nOutput has been logged to 'sim_out.txt'.\n");
 
                     pthread_mutex_destroy(&bufferLock);
                     pthread_cond_destroy(&cond);
+                    //Freeing memory allocated to threads
                     for (int ll = 0; ll < shared->bufferSize; ll++) {
                         free(shared->buffer[ll]);
                     }
@@ -82,9 +77,8 @@ int main(int argc, char* argv[]) {
                     }
                     free(info);
                 }
+                fclose(output);
             }
-            fclose(output);
-
         }
         free(shared);
     }
@@ -92,10 +86,12 @@ int main(int argc, char* argv[]) {
         printf("Error: Program must be run as 'lift_sim_A [m] [t]' where m is the buffer size and t is the time "
                "required per lift request\n");
     }
-
     return 0;
 }
 
+/* PURPOSE: It takes in the command line parameters and checks that they are valid. It returns a boolean value that
+ends the program before the simulation starts if the parameters are not valid. If they are valid, then the Shared
+struct values are initialised. */
 int loadSettings(Shared* shared, char* a, char* b) {
     int scan1, scan2, bufferSize, requestTime, valid;
     valid = 0; //'boolean'

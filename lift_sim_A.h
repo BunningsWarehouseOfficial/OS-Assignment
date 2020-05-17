@@ -15,9 +15,9 @@ typedef struct {
     int empty; //Number of empty slots in buffer
     int combinedMovement; //The total movement of all the lifts combined
     FILE* output; //FILE pointer for logging all activities to sim_out.txt
-    pthread_mutex_t bufferLock;
-    pthread_cond_t cond;
-    Request** buffer;
+    pthread_mutex_t bufferLock; //Lock provide mutex to buffer and file writing
+    pthread_cond_t cond; //Condition variable to manage bufferLock
+    Request** buffer; //Buffer containing produced requests that have yet to be consumed
 } Shared;
 
 //Wrapper struct for bringing Shared struct into lift threads while also managing extra information needed for lifts

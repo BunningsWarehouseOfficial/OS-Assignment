@@ -15,10 +15,10 @@ typedef struct {
     int combinedMovement; //The total movement of all the lifts combined
     int index; //The index of the first empty spot in the buffer
     FILE* output; //FILE pointer for logging all activities to sim_out.txt
-    sem_t mutex; //Mutex semaphore
+    sem_t mutex; //Semaphore to provide mutex to buffer and file writing
     sem_t full; //Semaphore representing how full the buffer is
     sem_t empty; //Semaphore representing how empty the buffer is
-    Request** buffer;
+    Request** buffer; //Buffer containing produced requests that have yet to be consumed
 } Shared;
 
 //Wrapper struct for bringing Shared struct into lift threads while also managing extra information needed for lifts

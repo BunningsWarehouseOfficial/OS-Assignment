@@ -1,3 +1,10 @@
+/* Filename:           lift_B.c
+   Author:             Kristian Rados (19764285)
+   Date Created:       09/05/2020
+   Date Last Modified: 17/05/2020
+   Purpose: This is where the simulation executes the lift requests. The lift() process takes a request out from the
+            buffer when possible and then processes the operations of that lift request. */
+
 #define _GNU_SOURCE //Fixes VSCODE issue where 'CLOCK_REALTIME' isn't recognised
 
 #include <stdlib.h>
@@ -9,6 +16,9 @@
 #include "lift_sim_B.h"
 #include "lift_B.h"
 
+/* PURPOSE: This is the consumer process function. Once it attains the mutex lock it pulls a request from the buffer and
+executes that request. The process will then sleep for the time specified by the command line parameter t before
+attempting to pull and execute another request. */
 void lift(void* arg) {
     int currentFloor, initial;
     Info* info = (Info*)arg;
@@ -21,9 +31,10 @@ void lift(void* arg) {
     info->executed = 0;
     info->liftMovement = 0;
     currentFloor = 1;
-    initial = shared->remaining; // ?
+    initial = shared->remaining;
 
     while (shared->remaining > 0) {
+        //Creating the absolute time that the thread will wait until before continuing
         struct timespec timeoutTime = {0, 0};
         clock_gettime(CLOCK_REALTIME, &timeoutTime);
         timeoutTime.tv_nsec += 500000000; //Timeout time of 0.5 seconds
@@ -50,6 +61,9 @@ void lift(void* arg) {
     exit(0);
 }
 
+/* PURPOSE: This is the function used by lift to execute the request that was taken from the buffer. It calculates the 
+movement made and adds it to the thread's and the simulation's totals. It then logs this executed request to the output
+log. */
 void executeRequest(int* currentFloor, FILE* output, Info* info, Request* request) {
     Shared* shared = info->shared;
     int movement, source, destination;
@@ -57,9 +71,9 @@ void executeRequest(int* currentFloor, FILE* output, Info* info, Request* reques
     source = request->source;
     destination = request->destination;
     movement = abs(*currentFloor - source) + abs(source - destination);
-    info->liftMovement += movement;
-    shared->combinedMovement += movement;
-    shared->index--;
+    info->liftMovement += movement;       //Updating lift movement total
+    shared->combinedMovement += movement; //Updating simulation movement total
+    shared->index--; //shared->index no longer represents the first empty spot in the buffer; must be decremented
 
     #ifdef VERBOSE //Provides visual indication of simulation progress
     printf("Lift-%d: %d -> %d -> %d\n", info->liftNo, *currentFloor, request->source, request->destination);
@@ -78,5 +92,5 @@ void executeRequest(int* currentFloor, FILE* output, Info* info, Request* reques
     fprintf(output, "Current position: Floor %d\n\n", destination);
     fflush(output);
     
-    *currentFloor = destination;
+    *currentFloor = destination; //Updating which floor the lift is currently on
 }
