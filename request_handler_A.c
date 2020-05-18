@@ -6,9 +6,13 @@
             checked to make sure they are valid and then the liftR thread pulls requests out from the input file and
             adds them to the buffer when possible. */
 
+#define _GNU_SOURCE //Fixes VSCODE issue where 'CLOCK_REALTIME' isn't recognised
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
+#include <time.h>
+#include <errno.h>
 #include "lift_sim_A.h"
 #include "request_handler_A.h"
 
@@ -25,11 +29,12 @@ void* liftR(void* arg) {
     }
     else {
         FILE* output = shared->output;
-        int numLines, index;
+        int numLines, index, timeout;
         Request** buffer = shared->buffer;
         pthread_mutex_t* bufferLock = &shared->bufferLock;
         pthread_cond_t* cond = &shared->cond;
-        
+        timeout = 0;
+
         numLines = shared->remaining; //The initial value of remaining represents the no. of lines in sim_input.txt
         printf("Running simulation...\n");
 
@@ -38,11 +43,16 @@ void* liftR(void* arg) {
             int source, destination;
             
             pthread_mutex_lock(bufferLock);
-            if (shared->empty == 0) {
-                pthread_cond_wait(cond, bufferLock);
+            while (shared->empty == 0 && timeout != ETIMEDOUT) {
+                //Creating the absolute time that the thread will wait until before continuing
+                struct timespec timeoutTime = {0, 0};
+                clock_gettime(CLOCK_REALTIME, &timeoutTime);
+                timeoutTime.tv_nsec += 500000000; //Timeout time of 0.5 seconds
+                
+                pthread_cond_timedwait(cond, bufferLock, &timeoutTime);
             }
-
-            //Critical section: Adding a request to the buffer
+            
+        if (timeout != ETIMEDOUT) {
             index = shared->bufferSize - shared->empty;
             request(input, buffer[index]);
             source = buffer[index]->source;
@@ -60,9 +70,10 @@ void* liftR(void* arg) {
             fprintf(output, "New Lift Request From Floor %d to Floor %d\n  ", source, destination);
             fprintf(output, "Request No: %d\n", numLines - shared->remaining);
             fprintf(output, "---------------------------------------------\n\n");
+            //End of critical section
+        }
             pthread_cond_signal(cond);
             pthread_mutex_unlock(bufferLock);
-            //End of critical section
         }
     }
 

@@ -34,6 +34,7 @@ void* lift(void* arg) {
 
     while (shared->remaining > 0) {
         pthread_mutex_lock(bufferLock);
+        timeout = 0;
         while (shared->empty == shared->bufferSize && timeout != ETIMEDOUT) {
             //Creating the absolute time that the thread will wait until before continuing
             struct timespec timeoutTime = {0, 0};
